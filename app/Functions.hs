@@ -4,8 +4,10 @@ that acts as \n,m -> "n - m" except I don't have the integers, I only
 have *codes* for integers as natural numbers (even = positive,
 odd = negative), where all the functions in sight are primitive recursive,
 build from the ground up. I only allow myself to use Haskell's mechanism
-to define Nat inductively,
-
+to define Nat inductively, and its recursion capabilities. Then everything
+is defined using this one tool, which amounts to the definition of
+a natural numbers object in a cartesian (closed) category
+<https://ncatlab.org/nlab/show/natural+numbers+object#withparams>.
 -}
 
 module Functions where
@@ -70,22 +72,22 @@ iterate' z _ Zero = z
 iterate' z f (Successor n) = let fx = f z in fx `seq` iterate' fx f n
 
 -- | recursion with parameters
--- This defines a function \z,n -> J(z,n) as:
--- J(z,0) := g(z)
--- J(z,Sn) := f(J(z,n))
+-- This defines a function \z,n -> J_g,f(z,n) as:
+-- J_g,f(z,0) := g(z)
+-- J_g,f(z,Sn) := f(J(z,n))
 iterateWithParams :: (a -> x) -> (x -> x) -> a -> Nat -> x
 iterateWithParams g _ p Zero = g p
 iterateWithParams g f p (Successor n) = let fpx = f (g p) in fpx `seq` iterate' fpx f n
 
 -- | recursion with even more parameters
--- This defines a function \z,n -> J(z,n) as:
--- J(z,0) := g0(z)
--- J(z,Sn) := h(z,n,J(z,n))
+-- This defines a function \z,n -> J_g,h(z,n) as:
+-- J_g,h(z,0) := g(z)
+-- J_g,h(z,Sn) := h(z,n,J(z,n))
 iterateWithMoreParams :: (a -> x) -> (a -> Nat -> x -> x) -> a -> Nat -> x
-iterateWithMoreParams g0 h p n = pr3 $ iterateWithParams g f p n
+iterateWithMoreParams g h p n = pr3 $ iterateWithParams g' f p n
   where
     -- g :: a -> (a, Nat, x)
-    g z = (z, zero, g0 z)
+    g' z = (z, zero, g z)
     -- f :: (a, Nat, x) -> (a, Nat, x)
     f (z, n', q) = (z, s n', h z n' q)
     -- project on third entry
