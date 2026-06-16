@@ -12,6 +12,8 @@ a natural numbers object in a cartesian (closed) category
 
 module Functions where
 
+import Data.List.NonEmpty (NonEmpty ((:|)))
+import qualified Data.List.NonEmpty as NE
 import Prelude hiding (id, (*), (+))
 
 ----------------------------------------------------------------------------
@@ -276,10 +278,11 @@ encodeDecode :: (Nat, Nat) -> (Nat, Nat)
 encodeDecode = decodeToPair . pairToCode
 
 -- should return 1 always
--- WIP
+-- note the canonicalRep!
 encodeDecodeComparison :: (Nat, Nat) -> Nat
 encodeDecodeComparison (n, m) = eqPairs (canonicalRep (n, m)) (encodeDecode (n, m))
 
+-- for inspecting the output
 encodeDecodeComparisonRaw :: (Nat, Nat) -> ((Nat, Nat), (Nat, Nat))
 encodeDecodeComparisonRaw (n, m) = (canonicalRep (n, m), encodeDecode (n, m))
 
@@ -289,19 +292,27 @@ encodeDecodeComparisonRaw (n, m) = (canonicalRep (n, m), encodeDecode (n, m))
 
 ----------------------------------------------------------------------------
 
+-- | make a list of Nums as long as you want
+nums' :: Nat -> [Nat]
+nums' n = NE.toList (iterate' (NE.singleton zero) (\l -> NE.append l (s (NE.last l) :| [])) n)
+
+-- | make a bunch of ordered pairs
+pairs' :: Nat -> Nat -> [(Nat, Nat)]
+pairs' n m = [(i, j) | i <- nums' n, j <- nums' m]
+
 -- | turn some codes into representative pairs
-decodeSample :: [(Nat, Nat)]
-decodeSample = map decodeToPair nums
+decodeSample :: Nat -> [(Nat, Nat)]
+decodeSample n = map decodeToPair (nums' n)
 
 -- | turn some representative pairs into codes
-encodeSample :: [Nat]
-encodeSample = map pairToCode samplePairs
+encodeSample :: Nat -> Nat -> [Nat]
+encodeSample n m = map pairToCode (pairs' n m)
 
-test1 :: [Nat]
-test1 = map decodeEncodeComparison nums
+testDecodeEncode :: Nat -> [Nat]
+testDecodeEncode n = map decodeEncodeComparison (nums' n)
 
-test2 :: [Nat]
-test2 = map encodeDecodeComparison samplePairs
+testEncodeDecode :: Nat -> Nat -> [Nat]
+testEncodeDecode n m = map encodeDecodeComparison (pairs' n m)
 
-test3 :: [((Nat, Nat), (Nat, Nat))]
-test3 = map encodeDecodeComparisonRaw samplePairs
+inspectEncodeDecode :: Nat -> Nat -> [((Nat, Nat), (Nat, Nat))]
+inspectEncodeDecode n m = map encodeDecodeComparisonRaw (pairs' n m)
