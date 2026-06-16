@@ -347,7 +347,7 @@ reify :: Nat -> Int
 reify Zero = 0
 reify (Successor n) = succ (reify n)
 
--- | helper function to calculate ""
+-- | helper function to calculate the "real difference"
 diffAsInt :: (Nat, Nat) -> Int
 diffAsInt (n, m) = reify n - reify m
 
