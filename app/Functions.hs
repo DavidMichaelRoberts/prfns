@@ -14,7 +14,7 @@ module Functions where
 
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.List.NonEmpty as NE
-import Prelude hiding (id, (*), (+))
+import Prelude hiding (Int, id, (*), (+))
 
 ----------------------------------------------------------------------------
 
@@ -264,6 +264,18 @@ rightShiftCode = pairToCode . rightShift . decodeToPair
 leftShiftCode :: Nat -> Nat
 leftShiftCode = pairToCode . leftShift . decodeToPair
 
+leftThenRightOnCodes :: Nat -> Nat
+leftThenRightOnCodes = rightShiftCode . leftShiftCode
+
+rightThenLeftOnCodes :: Nat -> Nat
+rightThenLeftOnCodes = leftShiftCode . rightShiftCode
+
+leftRightComparison :: Nat -> Nat
+leftRightComparison n = eq n (leftThenRightOnCodes n)
+
+rightLeftComparison :: Nat -> Nat
+rightLeftComparison n = eq n (rightThenLeftOnCodes n)
+
 -- round-trip from code to a pair back to code
 decodeEncode :: Nat -> Nat
 decodeEncode = pairToCode . decodeToPair
@@ -285,6 +297,38 @@ encodeDecodeComparison (n, m) = eqPairs (canonicalRep (n, m)) (encodeDecode (n, 
 -- for inspecting the output
 encodeDecodeComparisonRaw :: (Nat, Nat) -> ((Nat, Nat), (Nat, Nat))
 encodeDecodeComparisonRaw (n, m) = (canonicalRep (n, m), encodeDecode (n, m))
+
+pairPlus :: (Nat, Nat) -> (Nat, Nat) -> (Nat, Nat)
+pairPlus (n, m) (k, l) = (n + k, m + l)
+
+inv :: (Nat, Nat) -> (Nat, Nat)
+inv (n, m) = (m, n)
+
+----------------------------------------------------------------------------
+
+-- * Integer arithmetic
+
+----------------------------------------------------------------------------
+
+-- newtype Int = Nat deriving (Eq)
+
+intZero :: Nat
+intZero = zero
+
+intSucc :: Nat -> Nat
+intSucc = rightShiftCode
+
+intPred :: Nat -> Nat
+intPred = leftShiftCode
+
+intPlus :: Nat -> Nat -> Nat
+intPlus n m = pairToCode (decodeToPair n `pairPlus` decodeToPair m)
+
+neg :: Nat -> Nat
+neg = pairToCode . inv . decodeToPair
+
+intMinus :: Nat -> Nat -> Nat
+intMinus n m = intPlus n (neg m)
 
 ----------------------------------------------------------------------------
 
@@ -316,3 +360,9 @@ testEncodeDecode n m = map encodeDecodeComparison (pairs' n m)
 
 inspectEncodeDecode :: Nat -> Nat -> [((Nat, Nat), (Nat, Nat))]
 inspectEncodeDecode n m = map encodeDecodeComparisonRaw (pairs' n m)
+
+testLeftRightShift :: Nat -> [Nat]
+testLeftRightShift n = map leftRightComparison (nums' n)
+
+testRightLeftShift :: Nat -> [Nat]
+testRightLeftShift n = map rightLeftComparison (nums' n)
