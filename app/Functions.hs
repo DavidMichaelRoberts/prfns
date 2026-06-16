@@ -80,9 +80,9 @@ iterateWithParams g _ p Zero = g p
 iterateWithParams g f p (Successor n) = let fpx = f (g p) in fpx `seq` iterate' fpx f n
 
 -- | recursion with even more parameters
--- This defines a function \z,n -> J_g,h(z,n) as:
--- J_g,h(z,0) := g(z)
--- J_g,h(z,Sn) := h(z,n,J(z,n))
+-- This defines a function \z,n -> J_g,h(z, n) as:
+-- J_g,h(z, 0) := g(z)
+-- J_g,h(z, Sn) := h(z, n, J_g,h(z,n))
 iterateWithMoreParams :: (a -> x) -> (a -> Nat -> x -> x) -> a -> Nat -> x
 iterateWithMoreParams g h p n = pr3 $ iterateWithParams g' f p n
   where
@@ -112,18 +112,18 @@ id n = n
 ----------------------------------------------------------------------------
 
 -- | addition
-myPlus :: Nat -> Nat -> Nat
-myPlus m n = iterateWithParams id s m n
+plus :: Nat -> Nat -> Nat
+plus m n = iterateWithParams id s m n
 
 (+) :: Nat -> Nat -> Nat
-(+) = myPlus
+(+) = plus
 
 -- | multiplication
-myMultiply :: Nat -> Nat -> Nat
-myMultiply m n = iterateWithParams constZero (myPlus m) m n
+multiply :: Nat -> Nat -> Nat
+multiply m n = iterateWithParams constZero (plus m) m n
 
 (*) :: Nat -> Nat -> Nat
-(*) = myMultiply
+(*) = multiply
 
 -- | truncated minus 1
 predeccessor :: Nat -> Nat
@@ -144,14 +144,6 @@ absDiff m n = (n `monus` m) + (m `monus` n)
 
 ----------------------------------------------------------------------------
 
--- | tests if equal
-eq :: Nat -> Nat -> Nat
-eq m n = isZero (absDiff m n)
-
--- | tests if unequal
-notEq :: Nat -> Nat -> Nat
-notEq m n = isZero (eq m n)
-
 -- | tests if nonzero
 nonZero :: Nat -> Nat
 nonZero Zero = zero
@@ -161,6 +153,14 @@ nonZero _ = one
 isZero :: Nat -> Nat
 isZero Zero = one
 isZero _ = zero
+
+-- | tests if equal
+eq :: Nat -> Nat -> Nat
+eq m n = isZero (absDiff m n)
+
+-- | tests if unequal
+notEq :: Nat -> Nat -> Nat
+notEq m n = isZero (eq m n)
 
 -- | lt m n is (m < n)
 lt :: Nat -> Nat -> Nat
@@ -180,7 +180,7 @@ geq m n = gt (s m) n
 
 -- | test if two pairs are equal
 eqPairs :: (Nat, Nat) -> (Nat, Nat) -> Nat
-eqPairs (n, m) (k, l) = eq n m * eq k l
+eqPairs (n, m) (k, l) = eq n k * eq m l
 
 ----------------------------------------------------------------------------
 
@@ -237,7 +237,7 @@ decodeFromOdd :: Nat -> Nat
 decodeFromOdd n = divide two (s n) * nonZero (remainder two n)
 
 pairToCode :: (Nat, Nat) -> Nat
-pairToCode (n, Zero) = encodeAsEven n
+pairToCode (n, Zero) = encodeAsEven n -- get rid of this one?
 pairToCode (n, Successor m) = encodeSum $ canonicalRep (n, s m)
   where
     encodeSum (n', Zero) = encodeAsEven n'
@@ -280,6 +280,9 @@ encodeDecode = decodeToPair . pairToCode
 encodeDecodeComparison :: (Nat, Nat) -> Nat
 encodeDecodeComparison (n, m) = eqPairs (canonicalRep (n, m)) (encodeDecode (n, m))
 
+encodeDecodeComparisonRaw :: (Nat, Nat) -> ((Nat, Nat), (Nat, Nat))
+encodeDecodeComparisonRaw (n, m) = (canonicalRep (n, m), encodeDecode (n, m))
+
 ----------------------------------------------------------------------------
 
 -- * Testing code
@@ -297,6 +300,8 @@ encodeSample = map pairToCode samplePairs
 test1 :: [Nat]
 test1 = map decodeEncodeComparison nums
 
--- currently broken! Need to fix
 test2 :: [Nat]
 test2 = map encodeDecodeComparison samplePairs
+
+test3 :: [((Nat, Nat), (Nat, Nat))]
+test3 = map encodeDecodeComparisonRaw samplePairs
