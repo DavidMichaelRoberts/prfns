@@ -1,0 +1,9 @@
+:set -fno-warn-deprecations
+:set -Wno-missing-export-lists
+:set -Wno-name-shadowing
+
+:set prompt "\ESC[38;5;31m\STXλ>\ESC[m\STX "
+:set -ferror-spans -freverse-errors -fprint-expanded-synonyms
+
+:def g \_ -> readFile ".lib.ghci"
+:def lib \_ -> readFile ".lib.ghci"
