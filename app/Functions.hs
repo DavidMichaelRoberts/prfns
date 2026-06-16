@@ -12,8 +12,6 @@ a natural numbers object in a cartesian (closed) category
 
 module Functions where
 
-import Data.List.NonEmpty (NonEmpty ((:|)))
-import qualified Data.List.NonEmpty as NE
 import Prelude hiding (id, (*), (+))
 
 ----------------------------------------------------------------------------
@@ -52,15 +50,6 @@ three = s two
 four = s three
 five = s four
 six = s five
-
-nums :: [Nat]
-nums = [zero, one, two, three, four, five, six]
-
-smallNums :: [Nat]
-smallNums = [zero, one, two, three]
-
-samplePairs :: [(Nat, Nat)]
-samplePairs = [(n, m) | n <- smallNums, m <- smallNums]
 
 -- | constant functions
 constZero, constOne :: Nat -> Nat
@@ -362,7 +351,8 @@ reifyInt (MyInt n) = diffAsInt $ decodeToPair n
 
 -- | make a list of Nums as long as you want
 nums' :: Nat -> [Nat]
-nums' n = NE.toList (iterate' (NE.singleton zero) (\l -> NE.append l (s (NE.last l) :| [])) n)
+nums' Zero = [zero]
+nums' (Successor n) = nums' n ++ [s n]
 
 -- | make a bunch of ordered pairs
 pairs' :: Nat -> Nat -> [(Nat, Nat)]
