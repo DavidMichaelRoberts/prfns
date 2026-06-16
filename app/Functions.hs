@@ -14,7 +14,7 @@ module Functions where
 
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.List.NonEmpty as NE
-import Prelude hiding (Int, id, (*), (+))
+import Prelude hiding (id, (*), (+))
 
 ----------------------------------------------------------------------------
 
@@ -310,25 +310,49 @@ inv (n, m) = (m, n)
 
 ----------------------------------------------------------------------------
 
--- newtype Int = Nat deriving (Eq)
+newtype MyInt = MyInt Nat deriving (Eq)
 
-intZero :: Nat
-intZero = zero
+retract :: (Nat, Nat) -> MyInt
+retract (n, m) = MyInt (pairToCode (n, m))
 
-intSucc :: Nat -> Nat
-intSucc = rightShiftCode
+include :: MyInt -> (Nat, Nat)
+include (MyInt n) = decodeToPair n
 
-intPred :: Nat -> Nat
-intPred = leftShiftCode
+intZero :: MyInt
+intZero = MyInt zero
 
-intPlus :: Nat -> Nat -> Nat
-intPlus n m = pairToCode (decodeToPair n `pairPlus` decodeToPair m)
+intSucc :: MyInt -> MyInt
+intSucc (MyInt n) = MyInt (rightShiftCode n)
 
-neg :: Nat -> Nat
-neg = pairToCode . inv . decodeToPair
+intPred :: MyInt -> MyInt
+intPred (MyInt n) = MyInt (leftShiftCode n)
 
-intMinus :: Nat -> Nat -> Nat
+intPlus :: MyInt -> MyInt -> MyInt
+intPlus (MyInt n) (MyInt m) = MyInt (pairToCode (decodeToPair n `pairPlus` decodeToPair m))
+
+neg :: MyInt -> MyInt
+neg (MyInt n) = MyInt (pairToCode $ inv $ decodeToPair n)
+
+intMinus :: MyInt -> MyInt -> MyInt
 intMinus n m = intPlus n (neg m)
+
+----------------------------------------------------------------------------
+
+-- * Convert to Haskell native Int
+
+----------------------------------------------------------------------------
+
+-- | Convert a Nat to a Haskell Int
+reify :: Nat -> Int
+reify Zero = 0
+reify (Successor n) = succ (reify n)
+
+-- | helper function to calculate ""
+diffAsInt :: (Nat, Nat) -> Int
+diffAsInt (n, m) = reify n - reify m
+
+reifyInt :: MyInt -> Int
+reifyInt (MyInt n) = diffAsInt $ decodeToPair n
 
 ----------------------------------------------------------------------------
 
