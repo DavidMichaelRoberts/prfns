@@ -325,6 +325,12 @@ neg (MyInt n) = MyInt (pairToCode $ inv $ decodeToPair n)
 intMinus :: MyInt -> MyInt -> MyInt
 intMinus n m = intPlus n (neg m)
 
+natAsInt :: Nat -> MyInt
+natAsInt n = retract (n, zero)
+
+natToNonPosInt :: Nat -> MyInt
+natToNonPosInt n = retract (zero, n)
+
 ----------------------------------------------------------------------------
 
 -- * Convert to Haskell native Int
@@ -341,7 +347,7 @@ diffAsInt :: (Nat, Nat) -> Int
 diffAsInt (n, m) = reify n - reify m
 
 reifyInt :: MyInt -> Int
-reifyInt (MyInt n) = diffAsInt $ decodeToPair n
+reifyInt = diffAsInt . include
 
 ----------------------------------------------------------------------------
 
