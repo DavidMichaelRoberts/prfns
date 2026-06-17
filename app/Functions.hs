@@ -333,20 +333,20 @@ natToNonPosInt n = retract (zero, n)
 
 ----------------------------------------------------------------------------
 
--- * Convert to Haskell native Int
+-- * Convert to Haskell native Integer
 
 ----------------------------------------------------------------------------
 
--- | Convert a Nat to a Haskell Int
-reify :: Nat -> Int
+-- | Convert a Nat to a Haskell Integer
+reify :: Nat -> Integer
 reify Zero = 0
 reify (Successor n) = succ (reify n)
 
 -- | helper function to calculate the "real difference"
-diffAsInt :: (Nat, Nat) -> Int
+diffAsInt :: (Nat, Nat) -> Integer
 diffAsInt (n, m) = reify n - reify m
 
-reifyInt :: MyInt -> Int
+reifyInt :: MyInt -> Integer
 reifyInt = diffAsInt . include
 
 ----------------------------------------------------------------------------
@@ -356,33 +356,33 @@ reifyInt = diffAsInt . include
 ----------------------------------------------------------------------------
 
 -- | make a list of Nums as long as you want
-nums' :: Nat -> [Nat]
-nums' Zero = [zero]
-nums' (Successor n) = nums' n ++ [s n]
+nums :: Nat -> [Nat]
+nums Zero = [zero]
+nums (Successor n) = nums n ++ [s n]
 
 -- | make a bunch of ordered pairs
-pairs' :: Nat -> Nat -> [(Nat, Nat)]
-pairs' n m = [(i, j) | i <- nums' n, j <- nums' m]
+pairs :: Nat -> Nat -> [(Nat, Nat)]
+pairs n m = [(i, j) | i <- nums n, j <- nums m]
 
 -- | turn some codes into representative pairs
 decodeSample :: Nat -> [(Nat, Nat)]
-decodeSample n = map decodeToPair (nums' n)
+decodeSample n = map decodeToPair (nums n)
 
 -- | turn some representative pairs into codes
 encodeSample :: Nat -> Nat -> [Nat]
-encodeSample n m = map pairToCode (pairs' n m)
+encodeSample n m = map pairToCode (pairs n m)
 
 testDecodeEncode :: Nat -> [Nat]
-testDecodeEncode n = map decodeEncodeComparison (nums' n)
+testDecodeEncode n = map decodeEncodeComparison (nums n)
 
 testEncodeDecode :: Nat -> Nat -> [Nat]
-testEncodeDecode n m = map encodeDecodeComparison (pairs' n m)
+testEncodeDecode n m = map encodeDecodeComparison (pairs n m)
 
 inspectEncodeDecode :: Nat -> Nat -> [((Nat, Nat), (Nat, Nat))]
-inspectEncodeDecode n m = map encodeDecodeComparisonRaw (pairs' n m)
+inspectEncodeDecode n m = map encodeDecodeComparisonRaw (pairs n m)
 
 testLeftRightShift :: Nat -> [Nat]
-testLeftRightShift n = map leftRightComparison (nums' n)
+testLeftRightShift n = map leftRightComparison (nums n)
 
 testRightLeftShift :: Nat -> [Nat]
-testRightLeftShift n = map rightLeftComparison (nums' n)
+testRightLeftShift n = map rightLeftComparison (nums n)
