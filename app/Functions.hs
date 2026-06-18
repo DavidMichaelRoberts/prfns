@@ -299,7 +299,7 @@ inv (n, m) = (m, n)
 
 ----------------------------------------------------------------------------
 
-newtype MyInt = MyInt Nat deriving (Eq)
+newtype MyInt = MyInt Nat deriving (Eq, Show)
 
 retract :: (Nat, Nat) -> MyInt
 retract (n, m) = MyInt (pairToCode (n, m))
@@ -338,16 +338,22 @@ natToNonPosInt n = retract (zero, n)
 ----------------------------------------------------------------------------
 
 -- | Convert a Nat to a Haskell Integer
-reify :: Nat -> Integer
-reify Zero = 0
-reify (Successor n) = succ (reify n)
+reifyNat :: Nat -> Integer
+reifyNat Zero = 0
+reifyNat (Successor n) = succ (reifyNat n)
 
 -- | helper function to calculate the "real difference"
 diffAsInt :: (Nat, Nat) -> Integer
-diffAsInt (n, m) = reify n - reify m
+diffAsInt (n, m) = reifyNat n - reifyNat m
 
-reifyInt :: MyInt -> Integer
-reifyInt = diffAsInt . include
+reify :: MyInt -> Integer
+reify = diffAsInt . include
+
+deReify :: Integer -> MyInt
+deReify n
+  | n == 0 = intZero
+  | n > 0 = intSucc $ deReify (pred n)
+  | otherwise = neg $ deReify (-n)
 
 ----------------------------------------------------------------------------
 
