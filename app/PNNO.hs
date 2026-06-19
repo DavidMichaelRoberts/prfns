@@ -14,11 +14,15 @@ successor, or construction families of functions via the iterator,
 which is the defining property of a PNNO.
 
 -}
+{- HLINT ignore "Eta reduce" -}
 
 module PNNO
   ( Nat (..),
     s,
     iteratorWithState,
+    zero,
+    nums,
+    reifyNat,
   )
 where
 
@@ -28,6 +32,9 @@ data Nat = Zero | Successor Nat deriving (Eq)
 -- | successor
 s :: Nat -> Nat
 s = Successor
+
+zero :: Nat
+zero = Zero
 
 -- | recursion with parameters
 -- This defines a function \z,n -> J_{g,h}(z, n) as:
@@ -50,3 +57,13 @@ instance Show Nat where
       go _ (Successor (Successor (Successor (Successor (Successor Zero))))) = showString "5"
       go _ (Successor (Successor (Successor (Successor (Successor (Successor Zero)))))) = showString "6"
       go q (Successor m) = showParen (q > 10) $ showString "Successor " . go 11 m
+
+-- | make a list of Nums as long as you want
+nums :: Nat -> [Nat]
+nums Zero = [zero]
+nums (Successor n) = nums n ++ [s n]
+
+-- | Convert a Nat to a Haskell Integer
+reifyNat :: Nat -> Integer
+reifyNat Zero = 0
+reifyNat (Successor n) = succ (reifyNat n)

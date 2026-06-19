@@ -11,7 +11,7 @@ the module PNNO defining a parametrised natural numbers object
 
 module Functions where
 
-import PNNO (Nat (..), iteratorWithState, s)
+import PNNO (Nat, iteratorWithState, nums, reifyNat, s, zero)
 import Prelude hiding (id, mod, (*), (+))
 
 ----------------------------------------------------------------------------
@@ -27,13 +27,12 @@ iteratorNoParam :: b -> (b -> b) -> Nat -> b
 iteratorNoParam z f = iteratorNoState (\() -> z) f ()
 
 -- | constant functions
-constZero, constOne :: Nat -> Nat
+constZero, constOne :: a -> Nat
 constZero _ = zero
 constOne = s . constZero
 
 -- | small constants
-zero, one, two, three, four, five, six :: Nat
-zero = Zero
+one, two, three, four, five, six :: Nat
 one = s zero
 two = s one
 three = s two
@@ -46,9 +45,8 @@ id :: Nat -> Nat
 id n = n
 
 -- | predecessor
-predeccessor :: Nat -> Nat
-predeccessor Zero = zero
-predeccessor (Successor n) = n
+predecessor :: Nat -> Nat
+predecessor n = iteratorWithState (const zero) (\_ k _ -> k) () n
 
 ----------------------------------------------------------------------------
 
@@ -72,7 +70,7 @@ multiply m n = iteratorNoState constZero (plus m) m n
 
 -- | truncated minus, m `monus` n = m - n IF ≥ 0, otherwise 0
 monus :: Nat -> Nat -> Nat
-monus m n = iteratorNoState id predeccessor m n
+monus m n = iteratorNoState id predecessor m n
 
 -- | absolute difference function
 absDiff :: Nat -> Nat -> Nat
@@ -130,7 +128,7 @@ eqPairs (n, m) (k, l) = eq n k * eq m l
 -- or else if m = 0, just return
 -- this is n - (n % m), but we define it directly
 remainder :: Nat -> Nat -> Nat
-remainder m n = iteratorNoState constZero (\y -> s y * (y `lt` predeccessor m)) m n
+remainder m n = iteratorNoState constZero (\y -> s y * (y `lt` predecessor m)) m n
 
 -- | for the usual infix notation, n `mod` m
 mod :: Nat -> Nat -> Nat
@@ -174,7 +172,7 @@ decodeFromOdd n = (s n % two) * nonZero (parity n)
 pairToCode :: (Nat, Nat) -> Nat
 pairToCode (n, m) = encode $ canonicalRep (n, m)
   where
-    encode (k, l) = k * two + predeccessor (l * two)
+    encode (k, l) = k * two + predecessor (l * two)
 
 decodeToPair :: Nat -> (Nat, Nat)
 decodeToPair n = (decodeFromEven n, decodeFromOdd n)
@@ -281,11 +279,6 @@ natToNonPosInt n = retract (zero, n)
 
 ----------------------------------------------------------------------------
 
--- | Convert a Nat to a Haskell Integer
-reifyNat :: Nat -> Integer
-reifyNat Zero = 0
-reifyNat (Successor n) = succ (reifyNat n)
-
 -- | helper function to calculate the "real difference"
 diffAsInt :: (Nat, Nat) -> Integer
 diffAsInt (n, m) = reifyNat n - reifyNat m
@@ -304,11 +297,6 @@ deReify n
 -- * Testing code
 
 ----------------------------------------------------------------------------
-
--- | make a list of Nums as long as you want
-nums :: Nat -> [Nat]
-nums Zero = [zero]
-nums (Successor n) = nums n ++ [s n]
 
 -- | make a bunch of ordered pairs
 pairs :: Nat -> Nat -> [(Nat, Nat)]
