@@ -1,47 +1,37 @@
+{- HLINT ignore "Eta reduce" -}
+
 {-
 The aim of this module is to construct a function (Nat, Nat) -> Nat
 that acts as \n,m -> "n - m" except I don't have the integers, I only
 have *codes* for integers as natural numbers (even = positive,
 odd = negative), where all the functions in sight are primitive recursive,
-build from the ground up. I only allow myself to use Haskell's mechanism
-to define Nat inductively, and its recursion capabilities. Then everything
-is defined using this one tool, which amounts to the definition of
-a natural numbers object in a cartesian (closed) category
-<https://ncatlab.org/nlab/show/natural+numbers+object#withparams>.
+built from the ground up, using only the capabilities exported from
+the module PNNO defining a parametrised natural numbers object
 -}
 
 module Functions where
 
+import PNNO (Nat (..), iterator, s)
 import Prelude hiding (id, (*), (+))
 
 ----------------------------------------------------------------------------
 
--- * Basic definitions and sample data
+-- * Simplified iterators and basic constructs/constants
 
 ----------------------------------------------------------------------------
 
--- | The natural numbers
-data Nat = Zero | Successor Nat deriving (Eq)
+iteratorNoState :: (a -> x) -> (x -> x) -> a -> Nat -> x
+iteratorNoState g f = iterator g (\_ _ q -> f q)
 
--- | This function authored by Claude
--- Just for pretty printing small numbers in testing
-instance Show Nat where
-  showsPrec = go
-    where
-      go _ Zero = showString "0"
-      go _ (Successor Zero) = showString "1"
-      go _ (Successor (Successor Zero)) = showString "2"
-      go _ (Successor (Successor (Successor Zero))) = showString "3"
-      go _ (Successor (Successor (Successor (Successor Zero)))) = showString "4"
-      go _ (Successor (Successor (Successor (Successor (Successor Zero))))) = showString "5"
-      go _ (Successor (Successor (Successor (Successor (Successor (Successor Zero)))))) = showString "6"
-      go q (Successor m) = showParen (q > 10) $ showString "Successor " . go 11 m
+iteratorNoParam :: x -> (x -> x) -> Nat -> x
+iteratorNoParam z0 f = iteratorNoState (\() -> z0) f ()
 
--- | successor
-s :: Nat -> Nat
-s = Successor
+-- | constant functions
+constZero, constOne :: Nat -> Nat
+constZero _ = zero
+constOne = s . constZero
 
--- | zero, one and two
+-- | small constants
 zero, one, two, three, four, five, six :: Nat
 zero = Zero
 one = s zero
@@ -51,50 +41,14 @@ four = s three
 five = s four
 six = s five
 
--- | constant functions
-constZero, constOne :: Nat -> Nat
-constZero _ = zero
-constOne _ = one
-
--- | recursion
--- Thanks Tony for this one!
-iterate' :: x -> (x -> x) -> Nat -> x
-iterate' z _ Zero = z
-iterate' z f (Successor n) = let fx = f z in fx `seq` iterate' fx f n
-
--- | recursion with parameters
--- This defines a function \z,n -> J_g,f(z,n) as:
--- J_g,f(z,0) := g(z)
--- J_g,f(z,Sn) := f(J(z,n))
-iterateWithParams :: (a -> x) -> (x -> x) -> a -> Nat -> x
-iterateWithParams g _ p Zero = g p
-iterateWithParams g f p (Successor n) = let fpx = f (g p) in fpx `seq` iterate' fpx f n
-
--- | recursion with even more parameters
--- This defines a function \z,n -> J_g,h(z, n) as:
--- J_g,h(z, 0) := g(z)
--- J_g,h(z, Sn) := h(z, n, J_g,h(z,n))
-iterateWithMoreParams :: (a -> x) -> (a -> Nat -> x -> x) -> a -> Nat -> x
-iterateWithMoreParams g h p n = pr3 $ iterateWithParams g' f p n
-  where
-    -- g :: a -> (a, Nat, x)
-    g' z = (z, zero, g z)
-    -- f :: (a, Nat, x) -> (a, Nat, x)
-    f (z, n', q) = (z, s n', h z n' q)
-    -- project on third entry
-    pr3 (_, _, q) = q
-
--- | recursion with no parameter after all
-iterate'' :: x -> (x -> x) -> Nat -> x
-iterate'' z0 f = iterateWithParams (\() -> z0) f ()
-
--- shorthand
-j :: x -> (x -> x) -> Nat -> x
-j = iterate''
-
 -- | The identity function
 id :: Nat -> Nat
 id n = n
+
+-- | predecessor
+predeccessor :: Nat -> Nat
+predeccessor Zero = zero
+predeccessor (Successor n) = n
 
 ----------------------------------------------------------------------------
 
@@ -104,26 +58,21 @@ id n = n
 
 -- | addition
 plus :: Nat -> Nat -> Nat
-plus m n = iterateWithParams id s m n
+plus m n = iteratorNoState id s m n
 
 (+) :: Nat -> Nat -> Nat
 (+) = plus
 
 -- | multiplication
 multiply :: Nat -> Nat -> Nat
-multiply m n = iterateWithParams constZero (plus m) m n
+multiply m n = iteratorNoState constZero (plus m) m n
 
 (*) :: Nat -> Nat -> Nat
 (*) = multiply
 
--- | truncated minus 1
-predeccessor :: Nat -> Nat
-predeccessor Zero = zero
-predeccessor (Successor n) = n
-
 -- | truncated minus, m `monus` n = m - n IF ≥ 0, otherwise 0
 monus :: Nat -> Nat -> Nat
-monus m n = iterateWithParams id predeccessor m n
+monus m n = iteratorNoState id predeccessor m n
 
 -- | absolute difference function
 absDiff :: Nat -> Nat -> Nat
@@ -135,15 +84,9 @@ absDiff m n = (n `monus` m) + (m `monus` n)
 
 ----------------------------------------------------------------------------
 
--- | tests if nonzero
-nonZero :: Nat -> Nat
-nonZero Zero = zero
-nonZero _ = one
-
 -- | tests if zero
 isZero :: Nat -> Nat
-isZero Zero = one
-isZero _ = zero
+isZero n = one `monus` n
 
 -- | tests if equal
 eq :: Nat -> Nat -> Nat
@@ -152,6 +95,10 @@ eq m n = isZero (absDiff m n)
 -- | tests if unequal
 notEq :: Nat -> Nat -> Nat
 notEq m n = isZero (eq m n)
+
+-- | tests if nonzero
+nonZero :: Nat -> Nat
+nonZero = notEq zero
 
 -- | lt m n is (m < n)
 lt :: Nat -> Nat -> Nat
@@ -179,21 +126,20 @@ eqPairs (n, m) (k, l) = eq n k * eq m l
 
 ----------------------------------------------------------------------------
 
--- | parity of a nat
--- This should be the same as (remainder two)
-parity :: Nat -> Nat
-parity n = iterate'' zero isZero n
-
 -- | remainder of division: the number r with 0 ≤ r < m such that n = km + r
 -- or else if m = 0, just return
 -- this is n - (n % m), but we define it directly
 remainder :: Nat -> Nat -> Nat
-remainder m n = iterateWithParams constZero (\y -> (s y) * (y `lt` (predeccessor m))) m n
+remainder m n = iteratorNoState constZero (\y -> s y * (y `lt` predeccessor m)) m n
+
+-- | parity of a natural number
+parity :: Nat -> Nat
+parity n = remainder two n
 
 -- | truncated division
 -- divide n m = n % m, the largest integer q=n%m such that m * q ≤ n
 divide :: Nat -> Nat -> Nat
-divide m n = iterateWithMoreParams constZero h m n
+divide m n = iterator constZero h m n
   where
     h l' m' n' = nonZero l' * (n' + isZero (remainder l' (s m')))
 
@@ -212,9 +158,6 @@ encodeAsEven :: Nat -> Nat
 encodeAsEven n = n * two
 
 -- | this returns 0 if applied to an odd number
--- TODO: I think this will even work with `divide two n`
--- replaced by `divide two (s n)`, making the definition
--- of decodeToPair
 decodeFromEven :: Nat -> Nat
 decodeFromEven n = divide two n * isZero (remainder two n)
 
@@ -228,8 +171,7 @@ decodeFromOdd :: Nat -> Nat
 decodeFromOdd n = divide two (s n) * nonZero (remainder two n)
 
 pairToCode :: (Nat, Nat) -> Nat
-pairToCode (n, Zero) = encodeAsEven n -- get rid of this one?
-pairToCode (n, Successor m) = encodeSum $ canonicalRep (n, s m)
+pairToCode (n, m) = encodeSum $ canonicalRep (n, m)
   where
     encodeSum (n', Zero) = encodeAsEven n'
     encodeSum (n', Successor k) = encodeAsEven n' + encodeAsOdd (s k)
@@ -245,11 +187,11 @@ rightShift (n, m) = (s n, m)
 leftShift :: (Nat, Nat) -> (Nat, Nat)
 leftShift (n, m) = (n, s m)
 
--- untested, should be "plus 1" on coded integers
+-- | "plus 1" on coded integers
 rightShiftCode :: Nat -> Nat
 rightShiftCode = pairToCode . rightShift . decodeToPair
 
--- untested, should be "minus 1" on coded integers
+-- | "minus 1" on coded integers
 leftShiftCode :: Nat -> Nat
 leftShiftCode = pairToCode . leftShift . decodeToPair
 
@@ -265,11 +207,11 @@ leftRightComparison n = eq n (leftThenRightOnCodes n)
 rightLeftComparison :: Nat -> Nat
 rightLeftComparison n = eq n (rightThenLeftOnCodes n)
 
--- round-trip from code to a pair back to code
+-- | round-trip from code to a pair back to code
 decodeEncode :: Nat -> Nat
 decodeEncode = pairToCode . decodeToPair
 
--- should return 1 always
+-- | should return 1 always
 decodeEncodeComparison :: Nat -> Nat
 decodeEncodeComparison n = eq n (pairToCode (decodeToPair n))
 
@@ -278,20 +220,22 @@ decodeEncodeComparison n = eq n (pairToCode (decodeToPair n))
 encodeDecode :: (Nat, Nat) -> (Nat, Nat)
 encodeDecode = decodeToPair . pairToCode
 
--- should return 1 always
+-- | should return 1 always
 -- note the canonicalRep!
 encodeDecodeComparison :: (Nat, Nat) -> Nat
 encodeDecodeComparison (n, m) = eqPairs (canonicalRep (n, m)) (encodeDecode (n, m))
 
--- for inspecting the output
+-- | for inspecting the output for the round trip "encode then decode"
 encodeDecodeComparisonRaw :: (Nat, Nat) -> ((Nat, Nat), (Nat, Nat))
 encodeDecodeComparisonRaw (n, m) = (canonicalRep (n, m), encodeDecode (n, m))
 
+-- | Add a pair of Nats
 pairPlus :: (Nat, Nat) -> (Nat, Nat) -> (Nat, Nat)
 pairPlus (n, m) (k, l) = (n + k, m + l)
 
-inv :: (Nat, Nat) -> (Nat, Nat)
-inv (n, m) = (m, n)
+-- | Swap a pair of nats
+swap :: (Nat, Nat) -> (Nat, Nat)
+swap (n, m) = (m, n)
 
 ----------------------------------------------------------------------------
 
@@ -320,7 +264,7 @@ intPlus :: MyInt -> MyInt -> MyInt
 intPlus (MyInt n) (MyInt m) = MyInt (pairToCode (decodeToPair n `pairPlus` decodeToPair m))
 
 neg :: MyInt -> MyInt
-neg (MyInt n) = MyInt (pairToCode $ inv $ decodeToPair n)
+neg (MyInt n) = MyInt (pairToCode $ swap $ decodeToPair n)
 
 intMinus :: MyInt -> MyInt -> MyInt
 intMinus n m = intPlus n (neg m)
