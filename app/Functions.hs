@@ -20,11 +20,11 @@ import Prelude hiding (id, mod, (*), (+))
 
 ----------------------------------------------------------------------------
 
-iteratorNoState :: (a -> x) -> (x -> x) -> a -> Nat -> x
+iteratorNoState :: (a -> b) -> (b -> b) -> a -> Nat -> b
 iteratorNoState g f = iteratorWithState g (\_ _ q -> f q)
 
-iteratorNoParam :: x -> (x -> x) -> Nat -> x
-iteratorNoParam z0 f = iteratorNoState (\() -> z0) f ()
+iteratorNoParam :: b -> (b -> b) -> Nat -> b
+iteratorNoParam z f = iteratorNoState (\() -> z) f ()
 
 -- | constant functions
 constZero, constOne :: Nat -> Nat
