@@ -11,7 +11,7 @@ the module PNNO defining a parametrised natural numbers object
 
 module Functions where
 
-import PNNO (Nat (..), iterator, s)
+import PNNO (Nat (..), iteratorWithState, s)
 import Prelude hiding (id, mod, (*), (+))
 
 ----------------------------------------------------------------------------
@@ -21,7 +21,7 @@ import Prelude hiding (id, mod, (*), (+))
 ----------------------------------------------------------------------------
 
 iteratorNoState :: (a -> x) -> (x -> x) -> a -> Nat -> x
-iteratorNoState g f = iterator g (\_ _ q -> f q)
+iteratorNoState g f = iteratorWithState g (\_ _ q -> f q)
 
 iteratorNoParam :: x -> (x -> x) -> Nat -> x
 iteratorNoParam z0 f = iteratorNoState (\() -> z0) f ()
@@ -144,7 +144,7 @@ parity n = n `mod` two
 -- divide m n = n % m, the largest integer q=n % m such that m * q ≤ n
 -- note that the arguments are the wrong way around!
 divide :: Nat -> Nat -> Nat
-divide m n = iterator constZero h m n
+divide m n = iteratorWithState constZero h m n
   where
     h l' m' n' = nonZero l' * (n' + isZero (s m' `mod` l'))
 

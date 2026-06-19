@@ -13,12 +13,24 @@ which is the defining property of a PNNO.
 module PNNO
   ( Nat (..),
     s,
-    iterator,
+    iteratorWithState,
   )
 where
 
 -- | The natural numbers
 data Nat = Zero | Successor Nat deriving (Eq)
+
+-- | successor
+s :: Nat -> Nat
+s = Successor
+
+-- | recursion with parameters
+-- This defines a function \z,n -> J_{g,h}(z, n) as:
+-- J_{g,h}(p, 0) := g(p)
+-- J_{g,h}(p, Sn) := h(p, n, J_{g,h}(p,n))
+iteratorWithState :: (a -> x) -> (a -> Nat -> x -> x) -> a -> Nat -> x
+iteratorWithState g _ p Zero = g p
+iteratorWithState g h p (Successor n) = h p n (iteratorWithState g h p n)
 
 -- | This function authored by Claude
 -- Just for pretty printing small numbers in testing
@@ -33,15 +45,3 @@ instance Show Nat where
       go _ (Successor (Successor (Successor (Successor (Successor Zero))))) = showString "5"
       go _ (Successor (Successor (Successor (Successor (Successor (Successor Zero)))))) = showString "6"
       go q (Successor m) = showParen (q > 10) $ showString "Successor " . go 11 m
-
--- | successor
-s :: Nat -> Nat
-s = Successor
-
--- | recursion with parameters
--- This defines a function \z,n -> J_{g,h}(z, n) as:
--- J_{g,h}(p, 0) := g(p)
--- J_{g,h}(p, Sn) := h(p, n, J_{g,h}(p,n))
-iterator :: (a -> x) -> (a -> Nat -> x -> x) -> a -> Nat -> x
-iterator g _ p Zero = g p
-iterator g h p (Successor n) = h p n (iterator g h p n)
