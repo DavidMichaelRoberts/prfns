@@ -12,7 +12,7 @@ the module PNNO defining a parametrised natural numbers object
 module Functions where
 
 import PNNO (Nat (..), iterator, s)
-import Prelude hiding (id, (*), (+))
+import Prelude hiding (id, mod, (*), (+))
 
 ----------------------------------------------------------------------------
 
@@ -132,16 +132,25 @@ eqPairs (n, m) (k, l) = eq n k * eq m l
 remainder :: Nat -> Nat -> Nat
 remainder m n = iteratorNoState constZero (\y -> s y * (y `lt` predeccessor m)) m n
 
+-- | for the usual infix notation, n `mod` m
+mod :: Nat -> Nat -> Nat
+mod = flip remainder
+
 -- | parity of a natural number
 parity :: Nat -> Nat
-parity n = remainder two n
+parity n = n `mod` two
 
 -- | truncated division
--- divide n m = n % m, the largest integer q=n%m such that m * q ≤ n
+-- divide m n = n % m, the largest integer q=n % m such that m * q ≤ n
+-- note that the arguments are the wrong way around!
 divide :: Nat -> Nat -> Nat
 divide m n = iterator constZero h m n
   where
-    h l' m' n' = nonZero l' * (n' + isZero (remainder l' (s m')))
+    h l' m' n' = nonZero l' * (n' + isZero (s m' `mod` l'))
+
+-- | sensible infix operator for divide
+(%) :: Nat -> Nat -> Nat
+(%) = flip divide
 
 ----------------------------------------------------------------------------
 
@@ -159,7 +168,7 @@ encodeAsEven n = n * two
 
 -- | this returns 0 if applied to an odd number
 decodeFromEven :: Nat -> Nat
-decodeFromEven n = divide two n * isZero (remainder two n)
+decodeFromEven n = (n % two) * isZero (parity n)
 
 -- | never apply this to Zero!
 encodeAsOdd :: Nat -> Nat
@@ -168,7 +177,7 @@ encodeAsOdd (Successor n) = predeccessor (s n * two)
 
 -- | this returns 0 if applied to an even number
 decodeFromOdd :: Nat -> Nat
-decodeFromOdd n = divide two (s n) * nonZero (remainder two n)
+decodeFromOdd n = (s n % two) * nonZero (parity n)
 
 pairToCode :: (Nat, Nat) -> Nat
 pairToCode (n, m) = encodeSum $ canonicalRep (n, m)
