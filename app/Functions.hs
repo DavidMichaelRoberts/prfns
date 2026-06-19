@@ -163,27 +163,18 @@ divide m n = iterator constZero h m n
 canonicalRep :: (Nat, Nat) -> (Nat, Nat)
 canonicalRep (n, m) = (n `monus` m, m `monus` n)
 
-encodeAsEven :: Nat -> Nat
-encodeAsEven n = n * two
-
 -- | this returns 0 if applied to an odd number
 decodeFromEven :: Nat -> Nat
 decodeFromEven n = (n % two) * isZero (parity n)
-
--- | never apply this to Zero!
-encodeAsOdd :: Nat -> Nat
-encodeAsOdd Zero = undefined
-encodeAsOdd (Successor n) = predeccessor (s n * two)
 
 -- | this returns 0 if applied to an even number
 decodeFromOdd :: Nat -> Nat
 decodeFromOdd n = (s n % two) * nonZero (parity n)
 
 pairToCode :: (Nat, Nat) -> Nat
-pairToCode (n, m) = encodeSum $ canonicalRep (n, m)
+pairToCode (n, m) = encode $ canonicalRep (n, m)
   where
-    encodeSum (n', Zero) = encodeAsEven n'
-    encodeSum (n', Successor k) = encodeAsEven n' + encodeAsOdd (s k)
+    encode (k, l) = k * two + predeccessor (l * two)
 
 decodeToPair :: Nat -> (Nat, Nat)
 decodeToPair n = (decodeFromEven n, decodeFromOdd n)
