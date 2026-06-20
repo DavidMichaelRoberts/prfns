@@ -46,7 +46,7 @@ id n = n
 
 -- | predecessor
 predecessor :: Nat -> Nat
-predecessor n = iteratorWithState (const zero) (\_ k _ -> k) () n
+predecessor n = iteratorWithState constZero (\_ k _ -> k) () n
 
 ----------------------------------------------------------------------------
 
