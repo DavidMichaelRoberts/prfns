@@ -76,6 +76,32 @@ monus m n = iteratorNoState id predecessor m n
 absDiff :: Nat -> Nat -> Nat
 absDiff m n = (n `monus` m) + (m `monus` n)
 
+-- | remainder of division: the number r with 0 ≤ r < m such that n = km + r
+-- or else if m = 0, just return
+-- this is n - (n % m), but we define it directly
+remainder :: Nat -> Nat -> Nat
+remainder m n = iteratorNoState constZero (\y -> s y * (y `lt` predecessor m)) m n
+
+-- | for the usual infix notation, n `mod` m
+mod :: Nat -> Nat -> Nat
+mod = flip remainder
+
+-- | parity of a natural number
+parity :: Nat -> Nat
+parity n = n `mod` two
+
+-- | truncated division
+-- divide m n = n % m, the largest integer q=n % m such that m * q ≤ n
+-- note that the arguments are the wrong way around!
+divide :: Nat -> Nat -> Nat
+divide m n = iteratorWithState constZero h m n
+  where
+    h l' m' n' = nonZero l' * (n' + isZero (s m' `mod` l'))
+
+-- | sensible infix operator for divide
+(%) :: Nat -> Nat -> Nat
+(%) = flip divide
+
 ----------------------------------------------------------------------------
 
 -- * Predicates, valued 0, 1 :: Nat
@@ -114,41 +140,33 @@ leq m n = lt m (s n)
 geq :: Nat -> Nat -> Nat
 geq m n = gt (s m) n
 
+isEven :: Nat -> Nat
+isEven = isZero . parity
+
+isOdd :: Nat -> Nat
+isOdd = nonZero . parity
+
+----------------------------------------------------------------------------
+
+-- * Working with pairs of Nats
+
+----------------------------------------------------------------------------
+
 -- | test if two pairs are equal
 eqPairs :: (Nat, Nat) -> (Nat, Nat) -> Nat
 eqPairs (n, m) (k, l) = eq n k * eq m l
 
-----------------------------------------------------------------------------
+-- | scalar multiply
+scalarMult :: Nat -> (Nat, Nat) -> (Nat, Nat)
+scalarMult k (m, n) = (k * m, k * n)
 
--- * Some more arithmetic
+-- | Add a pair of Nats
+pairPlus :: (Nat, Nat) -> (Nat, Nat) -> (Nat, Nat)
+pairPlus (n, m) (k, l) = (n + k, m + l)
 
-----------------------------------------------------------------------------
-
--- | remainder of division: the number r with 0 ≤ r < m such that n = km + r
--- or else if m = 0, just return
--- this is n - (n % m), but we define it directly
-remainder :: Nat -> Nat -> Nat
-remainder m n = iteratorNoState constZero (\y -> s y * (y `lt` predecessor m)) m n
-
--- | for the usual infix notation, n `mod` m
-mod :: Nat -> Nat -> Nat
-mod = flip remainder
-
--- | parity of a natural number
-parity :: Nat -> Nat
-parity n = n `mod` two
-
--- | truncated division
--- divide m n = n % m, the largest integer q=n % m such that m * q ≤ n
--- note that the arguments are the wrong way around!
-divide :: Nat -> Nat -> Nat
-divide m n = iteratorWithState constZero h m n
-  where
-    h l' m' n' = nonZero l' * (n' + isZero (s m' `mod` l'))
-
--- | sensible infix operator for divide
-(%) :: Nat -> Nat -> Nat
-(%) = flip divide
+-- | Swap a pair of nats
+swap :: (Nat, Nat) -> (Nat, Nat)
+swap (n, m) = (m, n)
 
 ----------------------------------------------------------------------------
 
@@ -158,24 +176,19 @@ divide m n = iteratorWithState constZero h m n
 
 -- | this retuns a 'canonical' representative for an integer
 -- n - m = (n `monus` m) - (m `monus` n) when calculated in Int
+-- this function is idempotent
 canonicalRep :: (Nat, Nat) -> (Nat, Nat)
 canonicalRep (n, m) = (n `monus` m, m `monus` n)
 
--- | this returns 0 if applied to an odd number
-decodeFromEven :: Nat -> Nat
-decodeFromEven n = (n % two) * isZero (parity n)
-
--- | this returns 0 if applied to an even number
-decodeFromOdd :: Nat -> Nat
-decodeFromOdd n = (s n % two) * nonZero (parity n)
-
+-- | retraction part of the splitting of canonicalRep
 pairToCode :: (Nat, Nat) -> Nat
 pairToCode (n, m) = encode $ canonicalRep (n, m)
   where
     encode (k, l) = k * two + predecessor (l * two)
 
+-- | inclusion part of the splitting of canonicalRep
 decodeToPair :: Nat -> (Nat, Nat)
-decodeToPair n = (decodeFromEven n, decodeFromOdd n)
+decodeToPair n = scalarMult (s n % two) (isEven n, isOdd n)
 
 -- | this should be "add 1"
 rightShift :: (Nat, Nat) -> (Nat, Nat)
@@ -192,14 +205,6 @@ rightShiftCode = pairToCode . rightShift . decodeToPair
 -- | "minus 1" on coded integers
 leftShiftCode :: Nat -> Nat
 leftShiftCode = pairToCode . leftShift . decodeToPair
-
--- | Add a pair of Nats
-pairPlus :: (Nat, Nat) -> (Nat, Nat) -> (Nat, Nat)
-pairPlus (n, m) (k, l) = (n + k, m + l)
-
--- | Swap a pair of nats
-swap :: (Nat, Nat) -> (Nat, Nat)
-swap (n, m) = (m, n)
 
 ----------------------------------------------------------------------------
 
