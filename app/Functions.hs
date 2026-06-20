@@ -6,12 +6,12 @@ that acts as \n,m -> "n - m" except I don't have the integers, I only
 have *codes* for integers as natural numbers (even = positive,
 odd = negative), where all the functions in sight are primitive recursive,
 built from the ground up, using only the capabilities exported from
-the module PNNO defining a parametrised natural numbers object
+the module PNNO defining a parametrised natural numbers object.
 -}
 
 module Functions where
 
-import PNNO (Nat, iteratorWithState, nums, reifyNat, s, zero)
+import PNNO (Nat, iteratorWithState, nums, s, zero)
 import Prelude hiding (id, mod, (*), (+))
 
 ----------------------------------------------------------------------------
@@ -31,7 +31,7 @@ constZero, constOne :: a -> Nat
 constZero _ = zero
 constOne = s . constZero
 
--- | small constants
+-- | small positive constants
 one, two, three, four, five, six :: Nat
 one = s zero
 two = s one
@@ -193,6 +193,32 @@ rightShiftCode = pairToCode . rightShift . decodeToPair
 leftShiftCode :: Nat -> Nat
 leftShiftCode = pairToCode . leftShift . decodeToPair
 
+-- | Add a pair of Nats
+pairPlus :: (Nat, Nat) -> (Nat, Nat) -> (Nat, Nat)
+pairPlus (n, m) (k, l) = (n + k, m + l)
+
+-- | Swap a pair of nats
+swap :: (Nat, Nat) -> (Nat, Nat)
+swap (n, m) = (m, n)
+
+----------------------------------------------------------------------------
+
+-- * Testing code
+
+----------------------------------------------------------------------------
+
+-- | make a bunch of ordered pairs
+pairs :: Nat -> Nat -> [(Nat, Nat)]
+pairs n m = [(i, j) | i <- nums n, j <- nums m]
+
+-- | turn some codes into representative pairs
+decodeSample :: Nat -> [(Nat, Nat)]
+decodeSample n = map decodeToPair (nums n)
+
+-- | turn some representative pairs into codes
+encodeSample :: Nat -> Nat -> [Nat]
+encodeSample n m = map pairToCode (pairs n m)
+
 leftThenRightOnCodes :: Nat -> Nat
 leftThenRightOnCodes = rightShiftCode . leftShiftCode
 
@@ -226,89 +252,6 @@ encodeDecodeComparison (n, m) = eqPairs (canonicalRep (n, m)) (encodeDecode (n, 
 -- | for inspecting the output for the round trip "encode then decode"
 encodeDecodeComparisonRaw :: (Nat, Nat) -> ((Nat, Nat), (Nat, Nat))
 encodeDecodeComparisonRaw (n, m) = (canonicalRep (n, m), encodeDecode (n, m))
-
--- | Add a pair of Nats
-pairPlus :: (Nat, Nat) -> (Nat, Nat) -> (Nat, Nat)
-pairPlus (n, m) (k, l) = (n + k, m + l)
-
--- | Swap a pair of nats
-swap :: (Nat, Nat) -> (Nat, Nat)
-swap (n, m) = (m, n)
-
-----------------------------------------------------------------------------
-
--- * Integer arithmetic
-
-----------------------------------------------------------------------------
-
-newtype MyInt = MyInt Nat deriving (Eq, Show)
-
-retract :: (Nat, Nat) -> MyInt
-retract (n, m) = MyInt (pairToCode (n, m))
-
-include :: MyInt -> (Nat, Nat)
-include (MyInt n) = decodeToPair n
-
-intZero :: MyInt
-intZero = MyInt zero
-
-intSucc :: MyInt -> MyInt
-intSucc (MyInt n) = MyInt (rightShiftCode n)
-
-intPred :: MyInt -> MyInt
-intPred (MyInt n) = MyInt (leftShiftCode n)
-
-intPlus :: MyInt -> MyInt -> MyInt
-intPlus (MyInt n) (MyInt m) = MyInt (pairToCode (decodeToPair n `pairPlus` decodeToPair m))
-
-neg :: MyInt -> MyInt
-neg (MyInt n) = MyInt (pairToCode $ swap $ decodeToPair n)
-
-intMinus :: MyInt -> MyInt -> MyInt
-intMinus n m = intPlus n (neg m)
-
-natAsInt :: Nat -> MyInt
-natAsInt n = retract (n, zero)
-
-natToNonPosInt :: Nat -> MyInt
-natToNonPosInt n = retract (zero, n)
-
-----------------------------------------------------------------------------
-
--- * Convert to Haskell native Integer
-
-----------------------------------------------------------------------------
-
--- | helper function to calculate the "real difference"
-diffAsInt :: (Nat, Nat) -> Integer
-diffAsInt (n, m) = reifyNat n - reifyNat m
-
-reify :: MyInt -> Integer
-reify = diffAsInt . include
-
-deReify :: Integer -> MyInt
-deReify n
-  | n == 0 = intZero
-  | n > 0 = intSucc $ deReify (pred n)
-  | otherwise = neg $ deReify (-n)
-
-----------------------------------------------------------------------------
-
--- * Testing code
-
-----------------------------------------------------------------------------
-
--- | make a bunch of ordered pairs
-pairs :: Nat -> Nat -> [(Nat, Nat)]
-pairs n m = [(i, j) | i <- nums n, j <- nums m]
-
--- | turn some codes into representative pairs
-decodeSample :: Nat -> [(Nat, Nat)]
-decodeSample n = map decodeToPair (nums n)
-
--- | turn some representative pairs into codes
-encodeSample :: Nat -> Nat -> [Nat]
-encodeSample n m = map pairToCode (pairs n m)
 
 testDecodeEncode :: Nat -> [Nat]
 testDecodeEncode n = map decodeEncodeComparison (nums n)

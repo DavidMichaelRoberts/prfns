@@ -60,6 +60,7 @@ library
     exposed-modules:
                         Functions
                         PNNO
+                        MyIntegers
     build-depends:    base ^>=4.18.3.0
     hs-source-dirs:   app
     default-language: Haskell2010

@@ -1,23 +1,30 @@
+{- HLINT ignore "Eta reduce" -}
+
 {-
 
-This module defines a parametrised natural numbers object as at
-<https://ncatlab.org/nlab/show/natural+numbers+object#withparams>
-as well as some minor pretty-printing capabilities. The function
-`iteratorWithState` is essentially what is in Definition 1.1 in
+This module defines a parametrised natural numbers object (PNNO) as at
+<https://ncatlab.org/nlab/show/natural+numbers+object#withparams>.
+The function `iteratorWithState` is essentially what is in Definition 1.1
+in
 
 Leopoldo Román, "Cartesian categories with natural numbers object"
 Journal of Pure and Applied Algebra **58** issue 3 (1989) pp 267-278
 <https://doi.org/10.1016/0022-4049(89)90042-X>
 
-The only things you should be able to do is call a constructor, apply
-successor, or construction families of functions via the iterator,
-which is the defining property of a PNNO.
+The only things you can do is use zero, apply successor, or
+construct families of functions via the iterator, which is the
+defining property of a PNNO. The type constructors for Nat are
+not exported, only the type itself, and the structural functions
+just mentioned.
+
+There is also a helper function that will construct the list of Nats
+from zero up to the input Nat, and one that converts a Nat to the
+inbuilt Haskell Integer type.
 
 -}
-{- HLINT ignore "Eta reduce" -}
 
 module PNNO
-  ( Nat (..),
+  ( Nat,
     s,
     iteratorWithState,
     zero,
@@ -58,7 +65,7 @@ instance Show Nat where
       go _ (Successor (Successor (Successor (Successor (Successor (Successor Zero)))))) = showString "6"
       go q (Successor m) = showParen (q > 10) $ showString "Successor " . go 11 m
 
--- | make a list of Nums as long as you want
+-- | make a list of Nums, n |--> [0, one, ...., n]
 nums :: Nat -> [Nat]
 nums Zero = [zero]
 nums (Successor n) = nums n ++ [s n]
